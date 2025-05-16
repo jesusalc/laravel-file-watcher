@@ -1,5 +1,46 @@
+# Laravel File System Watcher
 
-Structure:
+
+A modular Laravel 10+ application that monitors a filesystem directory for file changes and performs dynamic actions based on file type.
+
+---
+### ✅Run
+
+./dev.sh
+
+
+
+## 📦 Features
+
+- ✅ Monitor file **creation** and **deletion**
+- 🖼 Automatically optimize `.jpg` / `.jpeg` files for web
+- 🥓 Append Bacon Ipsum to `.txt` files
+- 🌐 Send `.json` files to an HTTP endpoint
+- 📦 Extract `.zip` files
+- 😂 Replace deleted files with meme images from the Meme API
+- 🧪 Fully unit-tested with service-level isolation
+- 🔁 Cleanly extendable for future file types
+
+---
+
+## 🧠 Conceptual Overview
+
+This application was designed around the following principles:
+
+### ✅ Modular Service Structure
+
+Each file type is handled by its own dedicated service class. Every service implements a common interface:
+
+```php
+interface FileWatchServiceInterface {
+    public function fileTypes(): array;
+    public function handle(string $path): void;
+}
+This makes it trivial to add new file watchers without altering existing logic.
+```
+
+
+### ✅Structure:
 
 app/
 ├── Console/
@@ -14,8 +55,9 @@ app/
 │       ├── ZipExtractorService.php
 │       └── MemeRestorerService.php
 
+### ✅ Testing:
 
-Testing:
+./tests.bash
 
 tests/
 └── Unit/
@@ -28,65 +70,99 @@ tests/
             └── MemeRestorerServiceTest.php
 
 
+### ✅ Central Dispatcher
 
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+A single DispatcherService is responsible for routing file events to the correct service based on file extension. This separation of concerns keeps the watcher logic thin and maintainable.
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+### ✅ Clear Logging
 
-## About Laravel
+A custom Monolog channel (watcher) provides structured, timestamped log entries that are easy to tail or parse
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+### ⚠️ Challenges Encountered
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 1. File Modification Tracking
 
-## Learning Laravel
+Spatie's file-system-watcher only supports onFileCreated() and onFileDeleted() — no native onFileModified().
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+Solution: Simulated file modification detection was scoped out for now. It can be added later using:
 
-You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
+    php-inotify (Linux-only)
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+    Scheduled checksum-based polling
 
-## Laravel Sponsors
+    Replacing the watcher backend
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-### Premium Partners
+## 2. Handling Unstable APIs
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+APIs like Meme API and Bacon Ipsum may be slow, fail, or return invalid data.
 
-## Contributing
+Solution: All API calls:
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+    Use timeout + structured error logging
 
-## Code of Conduct
+    Include response duration in logs
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+    Validate expected JSON fields
 
-## Security Vulnerabilities
+## 3. Optimizing Very Small Images
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Some JPEGs were too small to optimize (e.g. 10×10 test images).
 
-## License
+Solution: Tests use realistic image sizes and assert size reductions only when measurable.
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+### 🔧 Extending the Watcher
+
+To add a new file watcher (e.g. for .csv, .mp4, .pdf):
+
+    Create a New Service
+```php
+class CsvArchiverService implements FileWatchServiceInterface {
+    public function fileTypes(): array { return ['csv']; }
+    public function handle(string $path): void {
+        // your logic here
+    }
+}
+```
+    Register It in DispatcherService
+```php
+$this->services = [
+    $image, $json, $txt, $zip, $csv
+];
+
+```
+
+
+
+### 🚀 Future Enhancements
+
+    Modify detection support (via polling or inotify)
+
+    Watcher service auto-discovery via tagged services
+
+    .meta.json metadata tracking per file
+
+    File quarantine mode
+
+    Web UI dashboard for logs/status
+
+### ✅ Running the Watcher
+
+php artisan fs:watch
+
+Logs output to:
+
+storage/logs/fs-watcher.log
+
+### 🧪 Running Tests
+
+php artisan test
+
+### 👥 Credits
+
+Built with Laravel 10, Spatie File Watcher, Guzzle, and clean architectural separation.
+### 📝 License
+
+MIT
