@@ -12,7 +12,7 @@ class ImageOptimizerService
 		return ['jpg', 'jpeg'];
 	}
 
-	public function optimize(string $path): void
+	public function handle(string $path): void
 	{
 		$optimizer = OptimizerChainFactory::create();
 		$optimizer->optimize($path);

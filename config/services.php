@@ -37,6 +37,9 @@ return [
 		'fswatcher' => [
 				'webhook' => env('FSWATCHER_WEBHOOK'),
     ],
+		'bacon' => [
+				'url' => env('BACON_IPSUM_URL'),
+		],
 
 
 ];

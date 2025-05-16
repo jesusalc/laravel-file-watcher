@@ -1,16 +1,20 @@
 <?php
 
-
 namespace App\Services\FileWatchers;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Client\RequestException;
 use Throwable;
+use App\Services\FileWatchers\FileWatchServiceInterface;
 
 class JsonWebhookService implements FileWatchServiceInterface
 {
-    protected string $endpoint = 'https://fswatcher.requestcatcher.com/';
+    protected string $endpoint;
+
+    public function __construct()
+    {
+        $this->endpoint = config('services.fswatcher.webhook');
+    }
 
     public function fileTypes(): array
     {
@@ -30,9 +34,9 @@ class JsonWebhookService implements FileWatchServiceInterface
         try {
             Log::channel('watcher')->info("Sending JSON to {$this->endpoint} from {$path}");
 
-            $response = Http::timeout(5)->withHeaders([
-                'Content-Type' => 'application/json'
-            ])->post($this->endpoint, $json);
+            $response = Http::timeout(5)
+                ->withHeaders(['Content-Type' => 'application/json'])
+                ->post($this->endpoint, $json);
 
             $duration = round((microtime(true) - $start) * 1000);
 

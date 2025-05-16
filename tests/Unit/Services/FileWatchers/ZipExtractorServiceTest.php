@@ -2,29 +2,52 @@
 namespace Tests\Unit\Services\FileWatchers;
 
 use Tests\TestCase;
-use Illuminate\Support\Facades\Http;
 use App\Services\FileWatchers\ZipExtractorService;
+use Illuminate\Support\Facades\File;
 
 class ZipExtractorServiceTest extends TestCase
 {
-    public function test_zip_is_extracted()
-    {
-        $sourceZip = storage_path('app/test.zip');
-        $extractTo = storage_path('app/');
-        $testFile = $extractTo . 'testfile.txt';
+    protected string $zipPath;
+    protected string $extractPath;
+    protected string $testFile;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->extractPath = storage_path('app');
+        $this->zipPath = "{$this->extractPath}/test.zip";
+        $this->testFile = "{$this->extractPath}/extracted.txt";
+
+        // Create a test zip file
         $zip = new \ZipArchive();
-        if ($zip->open($sourceZip, \ZipArchive::CREATE) === TRUE) {
-            $zip->addFromString('testfile.txt', 'Sample content');
+        if ($zip->open($this->zipPath, \ZipArchive::CREATE) === true) {
+            $zip->addFromString('extracted.txt', 'Hello from ZIP');
             $zip->close();
         }
+    }
+
+    protected function tearDown(): void
+    {
+        File::delete($this->zipPath);
+        File::delete($this->testFile);
+        parent::tearDown();
+    }
+
+    public function test_zip_is_extracted_successfully()
+    {
+        $this->assertFileExists($this->zipPath);
 
         $service = new ZipExtractorService();
-        $service->extract($sourceZip);
+        $service->handle($this->zipPath);
 
-        $this->assertFileExists($testFile);
+        $this->assertFileExists($this->testFile);
+        $this->assertEquals('Hello from ZIP', File::get($this->testFile));
+    }
 
-        unlink($sourceZip);
-        unlink($testFile);
+    public function test_file_types_returns_zip()
+    {
+        $service = new ZipExtractorService();
+        $this->assertEquals(['zip'], $service->fileTypes());
     }
 }
