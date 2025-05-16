@@ -41,7 +41,7 @@ This makes it trivial to add new file watchers without altering existing logic.
 
 
 ### ✅Structure:
-
+```
 app/
 ├── Console/
 │   └── Commands/
@@ -54,9 +54,9 @@ app/
 │       ├── TxtAppenderService.php
 │       ├── ZipExtractorService.php
 │       └── MemeRestorerService.php
-
+```
 ### ✅ Testing:
-
+```
 ./tests.bash
 
 tests/
@@ -69,7 +69,7 @@ tests/
             ├── ZipExtractorServiceTest.php
             └── MemeRestorerServiceTest.php
 
-
+```
 ### ✅ Central Dispatcher
 
 A single DispatcherService is responsible for routing file events to the correct service based on file extension. This separation of concerns keeps the watcher logic thin and maintainable.
@@ -149,17 +149,17 @@ $this->services = [
     Web UI dashboard for logs/status
 
 ### ✅ Running the Watcher
-
+```
 php artisan fs:watch
-
+```
 Logs output to:
-
+```
 storage/logs/fs-watcher.log
-
+```
 ### 🧪 Running Tests
-
+```
 php artisan test
-
+```
 ### 👥 Credits
 
 Built with Laravel 10, Spatie File Watcher, Guzzle, and clean architectural separation.
