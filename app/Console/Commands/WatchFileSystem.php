@@ -54,22 +54,26 @@ class WatchFileSystem extends Command
         while (true) {
             $events = inotify_read($inotify);
             if ($events) {
+                $logged_already = 0;
                 foreach ($events as $event) {
                     $filePath = $watchPath . '/' . $event['name'];
                     $mask = $event['mask'];
-
+                    if ($logged_already === 0) {
+                        Log::channel('watcher')->info("INOTIFY EVENT: {$event['mask']} on {$filePath}");
+                        $logged_already++;
+                    }
                     if ($mask & IN_CREATE) {
-                        Log::channel('watcher')->info("Event: IN_CREATE - {$filePath}");
+                        // Log::channel('watcher')->info("Event: IN_CREATE - {$filePath}");
                         $dispatcher->handleCreate($filePath);
                     }
 
                     if ($mask & IN_MODIFY) {
-                        Log::channel('watcher')->info("Event: IN_MODIFY - {$filePath}");
+                        // Log::channel('watcher')->info("Event: IN_MODIFY - {$filePath}");
                         $dispatcher->handleModify($filePath);
                     }
 
                     if ($mask & IN_DELETE) {
-                        Log::channel('watcher')->info("Event: IN_DELETE - {$filePath}");
+                        // Log::channel('watcher')->info("Event: IN_DELETE - {$filePath}");
                         $memeRestorer->handle($filePath);
                     }
                 }
@@ -98,10 +102,10 @@ class WatchFileSystem extends Command
             Log::channel('watcher')->info(".env_cors file found at: {$corsPath}");
         }
 
-        Log::channel('watcher')->info("# THIS SCRIPT NAME: {$app}");
-        Log::channel('watcher')->info("# THIS SCRIPT VERSION: {$version}");
-        Log::channel('watcher')->info("# THIS SCRIPT RELATIVE PATH: ./{$app}/");
-        Log::channel('watcher')->info("# THIS SCRIPT ABSOLUTE PATH: \"{$path}/{$app}\"");
+        Log::channel('watcher')->info("\033[38;5;164m # THIS SCRIPT NAME\033[38;5;251m: \033[38;5;151m{$app}");
+        Log::channel('watcher')->info("\033[38;5;164m # THIS SCRIPT VERSION\033[38;5;251m: \033[38;5;151m{$version}");
+        Log::channel('watcher')->info("\033[38;5;164m # THIS SCRIPT RELATIVE PATH\033[38;5;251m: \033[38;5;151m./{$app}/");
+        Log::channel('watcher')->info("\033[38;5;164m # THIS SCRIPT ABSOLUTE PATH\033[38;5;251m: \033[38;5;241m\"\033[38;5;151m{$path}/{$app}\033[38;5;241m\"");
         Log::channel('watcher')->info("PID: {$pid}");
 
 				$corsFile = base_path('.env_cors');
