@@ -14,25 +14,73 @@ class WatchFileSystem extends Command
     protected $signature = 'fs:watch';
     protected $description = 'Watch filesystem and trigger actions on file events';
 
-    public function handle(
-        DispatcherService $dispatcher,
-        MemeRestorerService $memeRestorer
-    ) {
-			$this->logStartup($dispatcher);
+    //   Spatie
+    //   public function handle(
+    //       DispatcherService $dispatcher,
+    //       MemeRestorerService $memeRestorer
+    //   ) {
+    //     $this->logStartup($dispatcher);
+    //     $watchPath = storage_path('app/watched');
+    //     Watch::path(storage_path('app/watched'))
+    //       ->onFileCreated(function ($path) use ($dispatcher) {
+    //           Log::channel('watcher')->info("Received {$path}");
+    //           $dispatcher->handleCreate($path);
+    //       })
+    //       ->onFileDeleted(function ($path) use ($memeRestorer) {
+    //           Log::channel('watcher')->info("File deleted: {$path}");
+    //           $memeRestorer->handle($path);
+    //       })
+    //       ->start();
+    //  }
 
-      $watchPath = storage_path('app/watched');
 
-      Watch::path(storage_path('app/watched'))
-        ->onFileCreated(function ($path) use ($dispatcher) {
-            Log::channel('watcher')->info("Received {$path}");
-            $dispatcher->handleCreate($path);
-        })
-        ->onFileDeleted(function ($path) use ($memeRestorer) {
-            Log::channel('watcher')->info("File deleted: {$path}");
-            $memeRestorer->handle($path);
-        })
-        ->start();
-   }
+    public function handle(DispatcherService $dispatcher, MemeRestorerService $memeRestorer)
+    {
+        if (!function_exists('inotify_init')) {
+            $this->error("inotify extension not installed.");
+            return Command::FAILURE;
+        }
+
+        $this->logStartup($dispatcher);
+
+        $watchPath = storage_path('app/watched');
+        $inotify = inotify_init();
+        stream_set_blocking($inotify, false);
+
+        $watchDescriptor = inotify_add_watch($inotify, $watchPath, IN_CREATE | IN_MODIFY | IN_DELETE);
+
+        Log::channel('watcher')->info("Watching folder via inotify: {$watchPath}");
+
+        while (true) {
+            $events = inotify_read($inotify);
+            if ($events) {
+                foreach ($events as $event) {
+                    $filePath = $watchPath . '/' . $event['name'];
+                    $mask = $event['mask'];
+
+                    if ($mask & IN_CREATE) {
+                        Log::channel('watcher')->info("Event: IN_CREATE - {$filePath}");
+                        $dispatcher->handleCreate($filePath);
+                    }
+
+                    if ($mask & IN_MODIFY) {
+                        Log::channel('watcher')->info("Event: IN_MODIFY - {$filePath}");
+                        $dispatcher->handleModify($filePath);
+                    }
+
+                    if ($mask & IN_DELETE) {
+                        Log::channel('watcher')->info("Event: IN_DELETE - {$filePath}");
+                        $memeRestorer->handle($filePath);
+                    }
+                }
+            }
+
+            usleep(250000); // 250ms polling delay to reduce CPU
+        }
+
+        inotify_rm_watch($inotify, $watchDescriptor);
+        fclose($inotify);
+    }
 
     protected function logStartup(DispatcherService $dispatcher): void
     {
