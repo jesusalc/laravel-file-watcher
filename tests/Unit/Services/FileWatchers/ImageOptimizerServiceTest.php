@@ -45,6 +45,6 @@ class ImageOptimizerServiceTest extends TestCase
     public function test_file_types_returns_jpg_and_jpeg()
     {
         $service = new ImageOptimizerService();
-        $this->assertEquals(['jpg', 'jpeg'], $service->fileTypes());
+        $this->assertEquals(['jpg', 'jpeg', 'png', 'gif', 'svg'], $service->fileTypes());
     }
 }
