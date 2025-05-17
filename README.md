@@ -1,4 +1,4 @@
-# Laravel File System Watcher
+# Laravel File System Watcher ** with Queue
 
 
 A modular Laravel 10+ application that monitors a filesystem directory for file changes and performs dynamic actions based on file type.
@@ -46,6 +46,8 @@ app/
 ├── Console/
 │   └── Commands/
 │       └── WatchFileSystem.php
+├── Jobs
+│   └── HandleFileEvent.php
 ├── Services/
 │   └── FileWatchers/
 │       ├── DispatcherService.php
@@ -60,6 +62,7 @@ app/
 ./tests.bash
 
 tests/
+├── TestCase.php
 └── Unit/
     └── Services/
         └── FileWatchers/
